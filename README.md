@@ -8,8 +8,8 @@ An intelligent, multi-agent AI system for municipal waste management — featuri
 
 | Service | Platform | URL |
 |---------|----------|-----|
-| Frontend | Vercel | _Set after deployment_ |
-| Backend API | Render | _Set after deployment_ |
+| Frontend | Vercel | https://frontend-five-lime-80.vercel.app |
+| Backend API | Render | https://smartwaste-backend-gb09.onrender.com |
 
 ---
 
