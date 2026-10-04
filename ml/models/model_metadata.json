@@ -1,0 +1,38 @@
+{
+  "model_name": "RandomForestRegressor",
+  "model_version": "v1.0.0",
+  "trained_at": "2026-10-03T10:38:43.994856",
+  "dataset_samples": 6000,
+  "features": [
+    "current_fill_percent",
+    "prev_fill_percent",
+    "fill_change",
+    "hour_of_day",
+    "day_of_week",
+    "waste_type",
+    "capacity_liters",
+    "time_since_collection_hours",
+    "historical_growth_rate"
+  ],
+  "categorical_features": [
+    "waste_type"
+  ],
+  "target": "future_fill_percent",
+  "metrics": {
+    "ml_model": {
+      "mae": 1.638,
+      "rmse": 2.098,
+      "mape": 3.17
+    },
+    "baseline_model": {
+      "mae": 1.965,
+      "rmse": 2.616,
+      "mape": 3.56
+    }
+  },
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 12,
+    "random_state": 42
+  }
+}

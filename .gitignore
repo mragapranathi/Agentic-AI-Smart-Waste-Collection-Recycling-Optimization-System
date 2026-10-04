@@ -1,0 +1,51 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.so
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+smart_waste.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Reports (generated PDFs)
+data/reports/*.pdf
+
+# ML model artifacts
+ml/*.pkl
+ml/*.joblib
+ml/*.model
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

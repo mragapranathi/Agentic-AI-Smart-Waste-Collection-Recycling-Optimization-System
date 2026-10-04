@@ -1,0 +1,13 @@
+vehicle_id,supported_waste_types,capacity_liters,current_load_liters,latitude,longitude,status,current_route_id
+TRUCK-01,"[""General""]",8000.0,0.0,12.9716,77.5946,AVAILABLE,
+TRUCK-02,"[""Recyclable""]",6000.0,0.0,12.9716,77.5946,AVAILABLE,
+TRUCK-03,"[""Organic""]",5000.0,0.0,12.9716,77.5946,AVAILABLE,
+TRUCK-04,"[""General""]",8000.0,0.0,12.976600000000001,77.5896,AVAILABLE,
+TRUCK-05,"[""Recyclable""]",7000.0,0.0,12.9666,77.5996,AVAILABLE,
+TRUCK-06,"[""Organic""]",6000.0,0.0,12.9816,77.6046,AVAILABLE,
+TRUCK-07,"[""General"", ""Recyclable""]",9000.0,1200.0,12.9596,77.5866,AVAILABLE,
+TRUCK-08,"[""General""]",8000.0,0.0,12.986600000000001,77.5796,AVAILABLE,
+TRUCK-09,"[""Recyclable""]",6000.0,0.0,12.9536,77.6126,AVAILABLE,
+TRUCK-10,"[""Organic""]",5000.0,0.0,12.9936,77.5996,AVAILABLE,
+TRUCK-11,"[""General""]",7500.0,4500.0,12.9616,77.5846,COLLECTING,
+TRUCK-12,"[""General"", ""Recyclable"", ""Organic""]",10000.0,0.0,12.9716,77.5946,MAINTENANCE,
