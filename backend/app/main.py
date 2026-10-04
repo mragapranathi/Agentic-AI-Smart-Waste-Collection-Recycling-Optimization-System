@@ -27,6 +27,17 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database schemas...")
     Base.metadata.create_all(bind=engine)
     logger.info("Database schemas initialized.")
+    try:
+        from backend.app.database.session import SessionLocal
+        from backend.app.models.entities import Bin
+        from scripts.seed_database import seed_database
+        with SessionLocal() as db:
+            if db.query(Bin).count() == 0:
+                logger.info("Empty database detected. Seeding initial municipal dataset...")
+                seed_database()
+                logger.info("Initial dataset seeded successfully.")
+    except Exception as e:
+        logger.error(f"Error checking/seeding database on startup: {e}")
     yield
     logger.info("Shutting down Smart Waste backend application.")
 
