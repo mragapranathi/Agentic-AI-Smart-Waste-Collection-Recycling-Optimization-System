@@ -812,11 +812,7 @@ Full interactive documentation available at:
 |:---|:---:|:---|:---|
 | `POSTGRES_URL` | ✅ | — | Full PostgreSQL connection string |
 | `SECRET_KEY` | ✅ | — | FastAPI JWT signing secret |
-| `MODEL_PATH` | ❌ | `ml/models/forecasting_model.joblib` | Path to serialized RF model |
 | `VITE_API_URL` | ✅ (frontend) | `http://localhost:8000/api` | Frontend → backend API base URL |
-| `ALLOWED_ORIGINS` | ❌ | `*` | CORS allowed origins (comma-separated) |
-| `LOG_LEVEL` | ❌ | `INFO` | Logging verbosity |
-| `SEED_ON_STARTUP` | ❌ | `false` | Auto-seed DB on startup |
 
 Copy `.env.example` to `.env` and fill in values before running locally.
 
