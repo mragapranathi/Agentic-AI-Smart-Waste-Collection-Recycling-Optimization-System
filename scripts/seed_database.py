@@ -158,6 +158,42 @@ def seed_database():
         print("Generating initial baseline forecasts...")
         ForecastService.run_all_forecasts(db, horizon_hours=24)
 
+        # 8. Seed Initial Workflow Run, Optimized Routes & Audit Report
+        print("Running initial optimization workflow to generate routes & audit plan...")
+        from backend.app.workflows.runner import WorkflowRunner
+        from backend.app.services.report_generator import PDFReportGenerator
+        from pathlib import Path
+        
+        try:
+            wf_res = WorkflowRunner.run_optimization_workflow(db, planning_period_hours=24)
+            wf_id = wf_res.get("workflow_id")
+            if wf_id:
+                print(f"Initial workflow executed: {wf_id}. Approving workflow plan to activate routes...")
+                WorkflowRunner.approve_workflow_plan(
+                    db,
+                    workflow_id=wf_id,
+                    operator="Chief Municipal Dispatcher",
+                    comment="System bootstrap: verified initial 8-agent plan and dispatched routes."
+                )
+                print("Initial routes created and approved.")
+        except Exception as e:
+            print(f"Warning: could not run initial workflow: {e}")
+
+        try:
+            print("Generating initial municipal operations PDF audit report...")
+            report_dir = Path(__file__).resolve().parent.parent / "data" / "reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            report_path = report_dir / f"RPT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-init.pdf"
+            PDFReportGenerator.generate_operations_report(
+                db=db,
+                output_path=str(report_path),
+                period_days=7,
+                title="Municipal Waste Operations & Recycling Optimization Audit"
+            )
+            print(f"Initial report generated at {report_path.name}")
+        except Exception as e:
+            print(f"Warning: could not generate initial report: {e}")
+
         print("=== Database Seeding Complete & Verified ===")
     finally:
         db.close()

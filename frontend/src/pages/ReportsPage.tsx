@@ -40,10 +40,24 @@ export default function ReportsPage() {
     }
   }
 
-  const handleDownload = (downloadUrl: string) => {
-    // Open download in a new tab or trigger directly
-    const fullUrl = downloadUrl.startsWith('http') ? downloadUrl : `http://localhost:8000${downloadUrl}`
-    window.open(fullUrl, '_blank')
+  const handleDownload = async (downloadUrl: string, filename?: string) => {
+    const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api\/?$/, '')
+    const fullUrl = downloadUrl.startsWith('http') ? downloadUrl : `${apiBase}${downloadUrl.startsWith('/') ? '' : '/'}${downloadUrl}`
+    try {
+      const response = await fetch(fullUrl)
+      if (!response.ok) throw new Error(`Download failed: ${response.statusText}`)
+      const blob = await response.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename || downloadUrl.split('/').pop() || 'municipal_report.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(fullUrl, '_blank')
+    }
   }
 
   return (
