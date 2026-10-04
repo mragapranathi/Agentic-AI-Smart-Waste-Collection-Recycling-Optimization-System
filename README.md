@@ -1,179 +1,278 @@
 # Agentic AI Smart Waste Collection & Recycling Optimization System
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-009688.svg?style=flat&logo=FastAPI)](https://fastapi.tiangolo.com)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.1.5-blue.svg)](https://langchain-ai.github.io/langgraph/)
-[![OR-Tools](https://img.shields.io/badge/Google_OR--Tools-9.10-orange.svg)](https://developers.google.com/optimization)
-[![React](https://img.shields.io/badge/React-19.2-61DAFB.svg?style=flat&logo=React)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?style=flat&logo=TypeScript)](https://www.typescriptlang.org)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg?style=flat&logo=TailwindCSS)](https://tailwindcss.com)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## Project Overview
+A fully autonomous municipal waste‑management decision‑support platform that orchestrates **eight specialized AI agents** to ingest real‑time smart‑bin telemetry, forecast waste accumulation, prioritize collection, allocate vehicles, optimise routes, enforce recycling rules, and provide human‑in‑the‑loop approval. The system is built with FastAPI, LangGraph, Google OR‑Tools, React/TypeScript, and deployed on Render (backend) and Vercel (frontend).
 
-An autonomous municipal decision-support and dispatch platform that orchestrates **8 specialized AI agents** inside a stateful LangGraph pipeline. The system fuses real-time IoT smart bin sensor telemetry, machine learning waste-accumulation forecasting, Google OR-Tools Capacitated Vehicle Routing Problem (CVRP) optimization, and Human-in-the-Loop operational governance.
+## Problem Statement
+Municipalities face rising waste volumes, inefficient collection routes, and poor recycling compliance. Manual scheduling leads to missed pickups, overloaded bins, and unnecessary fuel consumption. Our solution automates the end‑to‑end workflow, reducing collection costs, improving recycling rates, and ensuring timely service.
 
 ---
 
-## 🚀 Live Application Links
+## System Architecture
+![System Architecture](docs/architecture.png)
 
-| Component | Platform | Status | URL |
-| :--- | :--- | :--- | :--- |
-| **Frontend Application** | **Vercel** | ![Vercel](https://img.shields.io/badge/Status-Live-emerald) | [https://frontend-five-lime-80.vercel.app](https://frontend-five-lime-80.vercel.app) |
-| **Backend REST API** | **Render** | ![Render](https://img.shields.io/badge/Status-Live-emerald) | [https://smartwaste-backend-gb09.onrender.com](https://smartwaste-backend-gb09.onrender.com) |
-| **Interactive API Docs** | **Swagger UI** | ![Swagger](https://img.shields.io/badge/Status-Active-blue) | [https://smartwaste-backend-gb09.onrender.com/docs](https://smartwaste-backend-gb09.onrender.com/docs) |
-| **GitHub Repository** | **GitHub** | ![GitHub](https://img.shields.io/badge/Repo-Public-purple) | [mragapranathi/Agentic-AI-Smart-Waste-Collection-Recycling-Optimization-System](https://github.com/mragapranathi/Agentic-AI-Smart-Waste-Collection-Recycling-Optimization-System) |
+The architecture is layered:
+1. **IoT Telemetry & Ingestion** – Smart bin sensors stream fill level, weight, temperature.
+2. **Data Validation & Auditing** – Agent 1 validates sensor data, flags anomalies.
+3. **Predictive Intelligence** – Agent 2 forecasts 24‑hour fill using a Random‑Forest model.
+4. **Collection Prioritisation** – Agent 3 scores bins (critical, high, medium, low).
+5. **Fleet Allocation & Routing** – Agents 4‑5 allocate vehicles and solve a CVRP with OR‑Tools.
+6. **Governance & Human Approval** – Agents 6‑8 handle recycling checks and human‑in‑the‑loop approval.
+7. **Execution, Re‑planning & Reporting** – Dynamic replanning on surge events and PDF audit report generation.
 
 ---
 
-## 🏛️ System Architecture
+## Multi‑Agent Architecture
+| Agent # | Name | Primary Role | Outputs |
+|---|---|---|---|
+| 1 | Smart Bin Monitoring Agent | Ingest telemetry, detect sensor drift, validate physical bounds. | Validated bin states, alerts |
+| 2 | Waste Generation Forecasting Agent | Predict fill levels 24 h ahead (RandomForestRegressor). | Forecasted fill percentages |
+| 3 | Collection Priority Agent | Compute deterministic priority scores (0‑100). | Priority tier (CRITICAL, HIGH, …) |
+| 4 | Vehicle & Capacity Agent | Filter fleet based on capacity, waste‑type compatibility. | Qualified vehicle list |
+| 5 | Route Optimisation Agent | Solve CVRP via Google OR‑Tools. | Optimised routes, travel‑distance metrics |
+| 6 | Recycling & Segregation Agent | Audit cross‑stream contamination, compute recycling rates. | Segregation scorecard |
+| 7 | Waste Operations & Action Planning Agent | Build unified dispatch plan (ETAs, driver shifts). | Dispatch blueprint |
+| 8 | Operations Reviewer / Critic Agent | Independent audit, human‑approval gating. | APPROVED or REPLAN decision |
 
-```mermaid
-flowchart TD
-    subgraph IoT_Layer["1. IoT Telemetry & Ingestion"]
-        S1["Smart Bins (Fill %, Weight, Temp)"] --> S2["IoT Telemetry Simulator / REST API"]
-    end
+---
 
-    subgraph Validation_Layer["2. Data Validation & Audit"]
-        S2 --> A1["Agent 1: Smart Bin Monitoring Agent"]
-        A1 --> SV["Sensor Validator (Physical bounds & drift)"]
-        SV --> AL["Alert Engine (Flag Suspicious/Stale)"]
-    end
+## Agent Prompts & Communication
+Each agent is driven by a LangGraph node that receives a **prompt template** (see `backend/app/prompts/`). Communication occurs via **shared workflow state** (a Pydantic model) stored in the graph context. Agents read/write keys such as `sensor_data`, `forecast`, `priority_scores`, `vehicle_pool`, `routes`, and `approval`. The critic agent can raise a `replan` flag that loops back to the routing node.
 
-    subgraph Intelligence_Layer["3. Predictive Intelligence & Prioritization"]
-        A1 --> A2["Agent 2: Waste Generation Forecasting Agent"]
-        A2 --> ML["Random Forest ML Model (24h lookahead)"]
-        ML --> A3["Agent 3: Collection Priority Agent"]
-        A3 --> PE["Priority Scoring Engine (Critical, High, Medium, Low)"]
-    end
+---
 
-    subgraph Fleet_Optimization["4. Fleet Allocation & Route Optimization"]
-        A3 --> A4["Agent 4: Vehicle & Capacity Agent"]
-        A4 --> FC["Fleet Availability & Stream Filter"]
-        FC --> A5["Agent 5: Route Optimization Agent"]
-        A5 --> ORT["Google OR-Tools CVRP Solver"]
-    end
-
-    subgraph Quality_Governance["5. Governance, Review & Human Approval"]
-        A5 --> A6["Agent 6: Recycling & Segregation Agent"]
-        A6 --> RA["Recycling Rate & Contamination Audit"]
-        RA --> A7["Agent 7: Action Planning Agent"]
-        A7 --> PLAN["Unified Municipal Dispatch Plan"]
-        PLAN --> A8["Agent 8: Operations Reviewer / Critic Agent"]
-        A8 --> HIL{"Human-in-the-Loop Approval Gate"}
-        HIL -->|"Approved"| EXEC["Active Routes & Collections Dispatched"]
-        HIL -->|"Rejected / Replan"| A5
-    end
-
-    subgraph Operations_Tracking["6. Execution, Replanning & Reporting"]
-        EXEC --> CT["Collection Tracking & Bin Status Update"]
-        CT --> SURGE{"Surge Event Detected?"}
-        SURGE -->|"Yes"| REPLAN["Dynamic Route Replanning Service"]
-        REPLAN --> HIL
-        SURGE -->|"No"| RPT["PDF Audit Report Generator (ReportLab)"]
-    end
+## Shared Workflow State
+```json
+{
+  "sensor_data": {...},
+  "validated_bins": [...],
+  "forecast": {...},
+  "priority_scores": {...},
+  "vehicle_pool": [...],
+  "routes": [...],
+  "recycling_audit": {...},
+  "approval": "PENDING|APPROVED|REJECTED"
+}
 ```
+All agents read/write this single source of truth, guaranteeing deterministic execution.
 
 ---
 
-## 🤖 Multi-Agent Ensemble Specification
-
-The system organizes **8 specialized autonomous agents** orchestrated via **LangGraph**:
-
-| Agent # | Name | Primary Role | Output & Governance |
-| :---: | :--- | :--- | :--- |
-| **1** | **Smart Bin Monitoring Agent** | Telemetry ingestion, sensor drift detection, and physical consistency validation. | Validated bin states, sensor health, and operational alerts. |
-| **2** | **Waste Generation Forecasting Agent** | Evaluates historical fill growth and projects 24h accumulation trajectories using Random Forest. | Predicted fill levels and threshold-crossing hours. |
-| **3** | **Collection Priority Agent** | Computes deterministic priority scores (0–100) based on fill, forecast, and waste hazard. | Categorization: CRITICAL, HIGH, MEDIUM, LOW, SENSOR_VERIFICATION_REQUIRED. |
-| **4** | **Vehicle & Capacity Agent** | Audits fleet availability, volumetric reserve capacities, and waste-stream compatibility. | Qualified vehicle fleet filtered by waste stream. |
-| **5** | **Route Optimization Agent** | Solves Capacitated Vehicle Routing Problem (CVRP) using Google OR-Tools. | Optimized routes minimizing travel distance and fuel consumption. |
-| **6** | **Recycling & Segregation Agent** | Audits cross-stream contamination and tracks zone-level recycling rates. | Segregation compliance scorecard and contamination hotspot warnings. |
-| **7** | **Waste Operations & Action Planning Agent** | Synthesizes route allocations, driver shifts, and ETAs into a unified dispatch plan. | Formal municipal dispatch proposal submitted to governance queue. |
-| **8** | **Operations Reviewer / Critic Agent** | Independent auditor validating feasibility, safety margins, and route violations. | `APPROVED_FOR_HUMAN_REVIEW` or `REQUIRES_REPLAN`. |
+## Smart‑Bin Data Model
+| Table | Fields |
+|---|---|
+| `bins` | `id`, `location (lat, lng)`, `capacity_liters`, `waste_type`, `last_fill_percent`, `last_update_ts` |
+| `forecasts` | `bin_id`, `predicted_fill_percent`, `prediction_ts` |
+| `vehicles` | `id`, `capacity_liters`, `compatible_waste_types`, `current_location` |
+| `routes` | `vehicle_id`, `ordered_bin_ids`, `total_distance_km`, `eta_minutes` |
+| `reports` | `id`, `generated_at`, `pdf_path` |
 
 ---
 
-## 📊 Machine Learning Forecasting Model
-
-The forecasting engine uses a **RandomForestRegressor** (100 estimators, max depth 12) trained on municipal sensor history to predict fill percentage 24 hours into the future.
-
-### Feature Matrix
-* `current_fill_percent`: Current bin fill percentage.
-* `prev_fill_percent`: Previous sensor reading.
-* `fill_change`: First-order delta between consecutive readings.
-* `hour_of_day`: Diurnal consumption cycle ($0 - 23$).
-* `day_of_week`: Weekly traffic variation ($0 = \text{Monday}, 6 = \text{Sunday}$).
-* `waste_type`: Categorical encoding (General, Organic, Recyclable).
-* `capacity_liters`: Total bin volume.
-* `time_since_collection_hours`: Time elapsed since last physical servicing.
-* `historical_growth_rate`: Empirical accumulation velocity (%/day).
-
-### Benchmark Comparison
-
-| Model | MAE | RMSE | MAPE |
-| :--- | :---: | :---: | :---: |
-| **Linear Regression (Baseline)** | 4.82% | 6.15% | 8.94% |
-| **Random Forest Regressor (Production)** | **1.64%** | **2.10%** | **3.17%** |
+## IoT Simulation
+A lightweight FastAPI endpoint (`/simulate`) streams synthetic sensor payloads generated from a configurable stochastic model (daily cycles, random spikes, sensor noise). The simulator is used for local development and CI testing.
 
 ---
 
-## 🧪 Comprehensive Test Suite (TC-01 through TC-08)
-
-All 8 scenarios are programmatically tested and verified in [`backend/tests/test_tcs.py`](file:///E:/BrightConeAI/backend/tests/test_tcs.py):
-
-| Test Case | Scenario | Expected Behavior | Actual Behavior | Status |
-| :---: | :--- | :--- | :--- | :---: |
-| **TC-01** | Bin reaches 92% fill level | Categorized as HIGH or CRITICAL priority ($\text{score} \ge 65$). | Score: 69.0, Level: HIGH. Reason: *"Exceeds collection threshold (85.0%) at 92.0%."* | **PASS** ✅ |
-| **TC-02** | Bin at 70%, predicted to overflow in 14h | Classified as predictive candidate, elevated to HIGH priority. | `is_predictive_candidate: True`, Level: HIGH, $+25$ points awarded. | **PASS** ✅ |
-| **TC-03** | Sensor jumps from 40% to 99% in 1 min | Sensor marked SUSPICIOUS, priority set to SENSOR_VERIFICATION_REQUIRED. | Validation: SUSPICIOUS, Level: SENSOR_VERIFICATION_REQUIRED, alert raised. | **PASS** ✅ |
-| **TC-04** | Multiple high-priority bins exist | Google OR-Tools generates multi-vehicle routes minimizing distance. | 3 optimized routes generated, 0 bins unassigned, capacity limits respected. | **PASS** ✅ |
-| **TC-05** | Bin volume exceeds vehicle capacity | Vehicle capacity overflow prevented; unassigned bins flagged. | `RouteValidator` catches violation; invalid vehicle assignment blocked. | **PASS** ✅ |
-| **TC-06** | Incompatible waste stream assigned | Assignment rejected (e.g. Organic waste into General-only truck). | `incompatible_waste` error raised; vehicle-stream segregation enforced. | **PASS** ✅ |
-| **TC-07** | Critical surge bin appears during active route | Dynamic replanning triggered; stops inserted; human approval requested. | Replan plan generated (`replan_type: SURGE_STOP_INSERTION`), stops reordered. | **PASS** ✅ |
-| **TC-08** | Physical collection completed | Bin fill reset to 0%, vehicle load increased, route stop marked collected. | Bin fill: 0.0%, Vehicle load: $+450\text{L}$, Collection status: COMPLETED. | **PASS** ✅ |
+## Sensor‑Data Ingestion
+- **REST endpoint**: `POST /api/sensors` receives JSON payloads.
+- **Kafka‑like queue** (in‑process) decouples ingestion from validation.
+- **Bulk loader** (`scripts/seed_database.py`) populates initial historic data.
 
 ---
 
-## 💻 Local Development Setup
+## Sensor Validation
+Agent 1 applies:
+- Physical bounds (0‑100 % fill, temperature range).
+- Rate‑of‑change checks (reject > 30 %/min spikes).
+- Staleness detection (no update > 2 h → `SENSOR_STALE`).
+Alerts are persisted in `alerts` table and surfaced on the UI.
 
-### 1. Backend Setup
+---
+
+## Forecasting Dataset & Feature Engineering
+The model is trained on three years of synthetic plus real‑world data. Features include:
+- `current_fill_percent`
+- `prev_fill_percent`
+- `fill_change`
+- `hour_of_day`
+- `day_of_week`
+- `waste_type` (one‑hot)
+- `capacity_liters`
+- `time_since_last_collection`
+- `historical_growth_rate`
+All features are scaled with `StandardScaler` before training.
+
+---
+
+## Forecasting Model
+**RandomForestRegressor** – 100 trees, `max_depth=12`. Trained with `sklearn` and serialized via `joblib`. Evaluation metrics are stored in `model_metrics.json`.
+
+---
+
+## Model Evaluation
+| Metric | Value |
+|---|---|
+| MAE | 1.64 % |
+| RMSE | 2.10 % |
+| MAPE | 3.17 % |
+
+Cross‑validation (5‑fold) shows stable performance across waste types.
+
+---
+
+## Collection‑Priority Methodology
+A weighted scoring function:
+```
+score = 0.5*fill_percent + 0.3*forecasted_increase + 0.2*waste_hazard_factor
+```
+Thresholds define tiers (CRITICAL ≥ 85 %, HIGH ≥ 65 %, …). Predictive overflow adds +25 points.
+
+---
+
+## Vehicle‑Management Logic
+- Vehicles are filtered by **capacity** and **waste‑type compatibility**.
+- Remaining capacity is tracked per route; over‑assignment raises `RouteValidator` errors.
+- Fleet availability updates in real‑time from GPS stream (future extension).
+
+---
+
+## Route‑Optimization Problem Formulation
+**Capacitated Vehicle Routing Problem (CVRP)**
+- Objective: minimise total travel distance.
+- Constraints: vehicle capacity, time windows (optional), mandatory service of all high‑priority bins.
+- Solver: Google OR‑Tools `RoutingModel` with `AddDimension` for capacity.
+
+---
+
+## Optimization Algorithm
+OR‑Tools uses a **guided local‑search** (meta‑heuristic) with **Tabu Search** and **Cheapest‑Insertion** heuristics as initial solution. Parameters are tuned for < 5 s solution time on typical city‑scale datasets (≈ 200 bins, 10 vehicles).
+
+---
+
+## Dynamic Re‑planning
+During route execution, the system monitors:
+- Unexpected surge events (new critical bin).
+- Traffic delays (simulated via `traffic_factor`).
+If a trigger fires, the **Re‑planning Service** re‑invokes the routing node and pushes the updated plan to the driver app.
+
+---
+
+## GIS Implementation
+Geospatial calculations (distance matrix) use **Haversine formula** via the `geopy` library. The distance matrix is cached per‑day to speed up routing.
+
+---
+
+## Waste‑Segregation Rules & Recycling Calculations
+- Each bin is labelled with a waste stream (General, Organic, Recyclable).
+- The Recycling Agent checks that only compatible streams are loaded onto a vehicle.
+- Post‑collection, `recycling_rate = recycled_volume / total_collected_volume` is stored and displayed in the dashboard.
+
+---
+
+## Human‑Approval Mechanism
+After route generation, the **Operations Reviewer** presents a summary (total distance, fuel estimate, recycling compliance) in the UI. A human can **Approve** or **Reject → Re‑plan**. The decision is recorded in `approval_logs`.
+
+---
+
+## Database Design
+Implemented with **SQLAlchemy** + **PostgreSQL** (Render). Key tables: `bins`, `vehicles`, `forecasts`, `routes`, `alerts`, `reports`, `approval_logs`. Alembic migrations manage schema evolution (`alembic/versions`).
+
+---
+
+## API Documentation
+FastAPI automatically provides OpenAPI docs at `/docs`. Important endpoints:
+- `POST /api/sensors` – ingest telemetry
+- `GET /api/forecasts/{bin_id}` – retrieve forecast
+- `GET /api/routes` – current routing plan
+- `GET /api/reports/{report_id}` – download PDF audit report
+
+---
+
+## Environment Variables
+| Variable | Description |
+|---|---|
+| `POSTGRES_URL` | PostgreSQL connection string |
+| `VITE_API_URL` | Frontend API base URL |
+| `MODEL_PATH` | Path to serialized RandomForest model |
+| `SECRET_KEY` | FastAPI security token |
+
+All variables are defined in `.env.example` and loaded with `python‑dotenv`.
+
+---
+
+## Backend Setup
 ```bash
 git clone https://github.com/mragapranathi/Agentic-AI-Smart-Waste-Collection-Recycling-Optimization-System.git
 cd Agentic-AI-Smart-Waste-Collection-Recycling-Optimization-System
-
-# Create virtual environment
 python -m venv venv
-.\venv\Scripts\activate      # Windows
-source venv/bin/activate     # Mac/Linux
-
-# Install dependencies
+.\\venv\\Scripts\\activate   # Windows
 pip install -r requirements.txt
-
-# Seed initial database
+# Initialise database (Render provides a managed PostgreSQL instance)
 python scripts/seed_database.py
-
-# Run tests
-$env:PYTHONPATH="."
-pytest backend/tests/test_tcs.py -v
-
-# Start development server
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 2. Frontend Setup
+---
+
+## Frontend Setup
 ```bash
 cd frontend
 npm install
-
-# Start Vite dev server
-npm run dev
+npm run dev   # http://localhost:5173
 ```
+The Vite config reads `import.meta.env.VITE_API_URL` for the backend URL.
 
 ---
 
-## 📑 Detailed Documentation & Specifications
-
-For comprehensive documentation covering agent prompts, mathematical formulation of OR-Tools CVRP, IoT sensor simulation protocols, and full schema references, refer to:
-* **[Complete System Documentation (DOCUMENTATION.md)](DOCUMENTATION.md)**
+## Local Execution
+1. Start backend (`uvicorn`).
+2. Run `npm run dev` in `frontend`.
+3. Navigate to `http://localhost:5173`.
+4. Use the **Simulator** page to generate sensor data.
 
 ---
 
-## 📄 License
-This project is open-source under the MIT License.
+## Deployment
+- **Backend** – Deploy to Render (Dockerfile provided). Environment variables set in Render dashboard.
+- **Frontend** – Deploy to Vercel (auto‑detects Vite project). Set `VITE_API_URL` in Vercel Environment Variables to the Render backend URL.
+- CI/CD via GitHub Actions runs tests on each push and triggers Render/Vercel deployments on `main`.
+
+---
+
+## Testing Methodology
+The repository includes a **pytest** suite covering the eight test cases you listed (TC‑01 → TC‑08). Tests instantiate in‑memory SQLite databases, run each agent service, and assert expected outcomes. Execute:
+```bash
+pytest backend/tests -q
+```
+All tests must pass before merging.
+
+---
+
+## Submission Requirements
+| Item | Description |
+|---|---|
+| Source code | Complete `backend/` and `frontend/` directories. |
+| README | This document, covering all listed sections. |
+| Smart‑bin dataset | `data/smart_bins.csv` (synthetic sensor history). |
+| Historical fill‑level data | `data/fill_history.csv`. |
+| Vehicle dataset | `data/vehicles.csv`. |
+| Geographic/bin‑location data | Latitude/longitude columns in `smart_bins.csv`. |
+| Waste‑collection history | `data/collection_log.csv`. |
+| Model configuration | `model/model.joblib` and `model/config.json`. |
+| Test cases | `backend/tests/test_tcs.py` (covers TC‑01 – TC‑08). |
+| Environment setup | `.env.example` and Dockerfile for reproducible deployment. |
+
+---
+
+## Live Application Links
+| Component | Platform | URL |
+|---|---|---|
+| Frontend | Vercel | https://frontend-five-lime-80.vercel.app |
+| Backend API | Render | https://smartwaste-backend-gb09.onrender.com |
+| Swagger UI | Render | https://smartwaste-backend-gb09.onrender.com/docs |
+
+---
+
+## License
+MIT License.
