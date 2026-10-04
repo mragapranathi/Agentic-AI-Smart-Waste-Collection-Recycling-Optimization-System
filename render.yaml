@@ -2,25 +2,19 @@ services:
   - type: web
     name: smartwaste-backend
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python scripts/seed_database.py
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHONPATH
         value: /opt/render/project/src
       - key: ENVIRONMENT
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: smartwaste-db
-          property: connectionString
-      - key: GEMINI_API_KEY
-        sync: false
       - key: DEMO_MODE
         value: "true"
+      - key: DATABASE_URL
+        value: sqlite:////opt/render/project/src/smart_waste.db
+      - key: GEMINI_API_KEY
+        sync: false
     healthCheckPath: /api/health
-
-databases:
-  - name: smartwaste-db
-    databaseName: smartwaste
-    user: smartwaste_user
     plan: free
+    region: oregon
